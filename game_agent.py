@@ -9,6 +9,8 @@ class SearchTimeout(Exception):
     """Subclass base exception for code clarity. """
     pass
 
+def stupid_score(game, player):
+    return float(len(game.get_legal_moves(player)))
 
 def custom_score(game, player):
     """Calculate the heuristic value of a game state from the point of view
@@ -34,8 +36,7 @@ def custom_score(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    # TODO: finish this function!
-    raise NotImplementedError
+    return float(len(game.get_legal_moves(player)))
 
 
 def custom_score_2(game, player):
@@ -167,6 +168,7 @@ class MinimaxPlayer(IsolationPlayer):
         except SearchTimeout:
             pass  # Handle any actions required after timeout as needed
 
+        time_left(stop=True)
         # Return the best move from the last completed search iteration
         return best_move
 
@@ -212,8 +214,80 @@ class MinimaxPlayer(IsolationPlayer):
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
 
-        # TODO: finish this function!
-        raise NotImplementedError
+        max_utility = -float('inf')
+        best_move = None
+        for move in game.get_legal_moves():         # test all available moves one by one
+            prediction = game.forecast_move(move)   # apply the move to a copy of the game state
+            try:
+                predicted_value = self.min_value(prediction, depth-1)   # search the game state
+                if predicted_value > max_utility:
+                    # keep track of the best option
+                    max_utility = predicted_value
+                    best_move = move
+            # If the time runs out during a search of a particular depth, return the best option so far
+            except SearchTimeout:
+                pass
+        return best_move
+
+    def min_value(self, game, depth):
+        """ Return the minimal utility for the game going no further than depth(?)
+        
+        Parameters
+        ----------
+        game : isolation.GameBoard
+            An instance of GameBoard representing the current state of the game
+
+        depth : int
+            Depth is an integer representing the maximum number of plies to
+            search in the game tree before aborting
+        
+        Returns
+        -------
+        min_utility : int
+            Utility represents the best option available at the current game state for the minimizing player
+
+        """
+        # Raise exception if we're out of time
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise SearchTimeout()
+
+        if depth <= 0:
+            return custom_score(game, game.active_player)
+
+        min_utility = float('inf')
+        for move in game.get_legal_moves():
+            prediction = game.forecast_move(move)
+            min_utility = min(min_utility, self.max_value(prediction, depth-1))
+    
+    def max_value(self, game, depth):
+        """ Return the maximum utility for the game going no further than depth(?)
+        
+        Parameters
+        ----------
+        game : isolation.GameBoard
+            An instance of GameBoard representing the current state of the game
+
+        depth : int
+            Depth is an integer representing the maximum number of plies to
+            search in the game tree before aborting
+        
+        Returns
+        -------
+        max_utility : int
+            Utility represents the best option available at the current game state for the maximizing player
+
+        """
+        # Raise exception if we're out of time
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise SearchTimeout()
+
+        if depth <= 0:
+            return custom_score(game, game.active_player)
+
+        max_utility = -float('inf')
+        for move in game.get_legal_moves():
+            prediction = game.forecast_move(move)
+            max_utility = max(max_utility, self.min_value(prediction, depth-1))
 
 
 class AlphaBetaPlayer(IsolationPlayer):

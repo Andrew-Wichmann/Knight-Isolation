@@ -133,8 +133,16 @@ def center_score(game, player):
     return float((h - y)**2 + (w - x)**2)
 
 
-class RandomPlayer():
+class Player():
+    def __init__(self, name):
+        self.name = name
+
+
+class RandomPlayer(Player):
     """Player that chooses a move randomly."""
+
+    def __init__(self, name='Random Player'):
+        super().__init__(name)
 
     def get_move(self, game, time_left):
         """Randomly select a move from the available legal moves.
@@ -162,12 +170,13 @@ class RandomPlayer():
         return legal_moves[randint(0, len(legal_moves) - 1)]
 
 
-class GreedyPlayer():
+class GreedyPlayer(Player):
     """Player that chooses next move to maximize heuristic score. This is
     equivalent to a minimax search agent with a search depth of one.
     """
 
-    def __init__(self, score_fn=open_move_score):
+    def __init__(self, name='Greedy Player', score_fn=open_move_score):
+        super().__init__(name)
         self.score = score_fn
 
     def get_move(self, game, time_left):
@@ -199,9 +208,11 @@ class GreedyPlayer():
         return move
 
 
-class HumanPlayer():
+class HumanPlayer(Player):
     """Player that chooses a move according to user's input."""
-
+    def __init__(self, name='Human Player'):
+        super().__init__(name)
+        
     def get_move(self, game, time_left):
         """
         Select a move from the available legal moves based on user input at the
@@ -256,8 +267,8 @@ if __name__ == "__main__":
     from isolation import Board
 
     # create an isolation board (by default 7x7)
-    player1 = RandomPlayer()
-    player2 = GreedyPlayer()
+    player1 = RandomPlayer(name='Random Player')
+    player2 = GreedyPlayer(name='Greedy Player')
     game = Board(player1, player2)
 
     # place player 1 on the board at row 2, column 3, then place player 2 on
@@ -284,6 +295,6 @@ if __name__ == "__main__":
     # play the remainder of the game automatically -- outcome can be "illegal
     # move", "timeout", or "forfeit"
     winner, history, outcome = game.play()
-    print("\nWinner: {}\nOutcome: {}".format(winner, outcome))
+    print("\nWinner: {}\nOutcome: {}".format(winner.name, outcome))
     print(game.to_string())
     print("Move history:\n{!s}".format(history))
