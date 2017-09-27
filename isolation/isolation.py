@@ -10,6 +10,7 @@ be available to project reviewers.
 import random
 import timeit
 from copy import copy
+import sample_players
 
 TIME_LIMIT_MILLIS = 150
 
@@ -262,7 +263,7 @@ class Board(object):
         return valid_moves
 
     def print_board(self):
-        """DEPRECATED - use Board.to_string()"""
+        """DEPRECATED - use Board.print(game.to_string())()"""
         return self.to_string()
 
     def to_string(self, symbols=['1', '2']):
@@ -322,6 +323,57 @@ class Board(object):
 
             move_start = time_millis()
             time_left = lambda : time_limit - (time_millis() - move_start)
+            curr_move = self._active_player.get_move(game_copy, time_left)
+            move_end = time_left()
+
+            if curr_move is None:
+                curr_move = Board.NOT_MOVED
+
+            if move_end < 0:
+                return self._inactive_player, move_history, "timeout"
+
+            if curr_move not in legal_player_moves:
+                if len(legal_player_moves) > 0:
+                    return self._inactive_player, move_history, "forfeit"
+                return self._inactive_player, move_history, "illegal move"
+
+            move_history.append(list(curr_move))
+
+            self.apply_move(curr_move)
+
+
+class HackedBoard(Board):
+    def play(self, time_limit=TIME_LIMIT_MILLIS):
+        """Execute a match between the players by alternately soliciting them
+        to select a move and applying it in the game.
+
+        Parameters
+        ----------
+        time_limit : numeric (optional)
+            The maximum number of milliseconds to allow before timeout
+            during each turn.
+
+        Returns
+        ----------
+        (player, list<[(int, int),]>, str)
+            Return multiple including the winning player, the complete game
+            move history, and a string indicating the reason for losing
+            (e.g., timeout or invalid move).
+        """
+        move_history = []
+
+        time_millis = lambda: 1000 * timeit.default_timer()
+
+        while True:
+
+            legal_player_moves = self.get_legal_moves()
+            game_copy = self.copy()
+
+            move_start = time_millis()
+            if isinstance(self.active_player, sample_players.HumanPlayer):
+                time_left = lambda : 999999 - (time_millis() - move_start)
+            else:
+                time_left = lambda : time_limit - (time_millis() - move_start)
             curr_move = self._active_player.get_move(game_copy, time_left)
             move_end = time_left()
 

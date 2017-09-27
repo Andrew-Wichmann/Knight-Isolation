@@ -7,30 +7,20 @@ from datetime import datetime
 import unittest
 
 import isolation
+from game_agent import SearchTimeout
 import game_agent
+from utils import *
 
 from importlib import reload
 import time
-
-start_time = None
-def time_left(stop=False):
-    global start_time
-    if stop:
-        start_time = None
-        return
-
-    if start_time is None:
-        start_time = datetime.now().microsecond/1000 +  1000*datetime.now().second
-    current_time = datetime.now().microsecond/1000 +  1000*datetime.now().second
-    return isolation.isolation.TIME_LIMIT_MILLIS - (current_time - start_time)
 
 class IsolationTest(unittest.TestCase):
     """Unit tests for isolation agents"""
 
     def setUp(self):
         reload(game_agent)
-        self.player1 = game_agent.MinimaxPlayer()
-        self.player2 = game_agent.MinimaxPlayer()
+        self.player1 = game_agent.MinimaxPlayer(score_fn=game_agent.stupid_score)
+        self.player2 = game_agent.MinimaxPlayer(score_fn=game_agent.stupid_score)
 
         self.game = isolation.Board(self.player1, self.player2)
     
@@ -43,7 +33,7 @@ class IsolationTest(unittest.TestCase):
         time.sleep(.1)
         stamp = time_left()
         self.assertLessEqual(stamp, 50)
-        self.assertGreater(stamp, 49)
+        self.assertGreater(stamp, 49.5)
         self.assertEqual(time_left(True), None)
 
     def test_time_left_start_and_stop_and_start(self):
@@ -51,33 +41,45 @@ class IsolationTest(unittest.TestCase):
         time.sleep(.1)
         stamp = time_left()
         self.assertLessEqual(stamp, 50)
-        self.assertGreater(stamp, 49)
+        self.assertGreater(stamp, 49.5)
         self.assertEqual(time_left(True), None)
-
 
         self.assertLessEqual(time_left(), 150)
         time.sleep(.1)
         stamp = time_left()
         self.assertLessEqual(stamp, 50)
-        self.assertGreater(stamp, 49)
+        self.assertGreater(stamp, 49.5)
 
     def test_stupid_scoring(self):
-        self.player1.score = game_agent.stupid_score
-        self.player2.score = game_agent.stupid_score
         self.assertEqual(self.player1.score(self.game, self.player1), 49)
         self.assertEqual(self.player2.score(self.game, self.player2), 49)
     
     def test_depth_of_one(self):
-        self.player1.score = game_agent.stupid_score
-        self.player2.score = game_agent.stupid_score
         self.player1.search_depth=1
         self.player2.search_depth=1
 
         move = self.player1.get_move(game=self.game, time_left=time_left)
-        self.assertEqual(move, self.game.get_legal_moves(self.player1)[0])
+        self.assertEqual(move, (2,2))
+
+        self.game.apply_move(move)
 
         move = self.player2.get_move(game=self.game, time_left=time_left)
-        self.assertEqual(move, self.game.get_legal_moves(self.player1)[0])
+        self.assertEqual(move, (3,2))
+    
+    def test_timer_stops_after_get_move(self):
+        self.player1.get_move(game=self.game, time_left=time_left)
+        self.assertAlmostEqual(time_left(), 150, 1)
+
+class BastardTest(unittest.TestCase):
+    def setUp(self):
+        reload(game_agent)
+        self.player1 = game_agent.MinimaxPlayerTroll(score_fn=game_agent.stupid_score)
+        self.player2 = game_agent.MinimaxPlayerTroll(score_fn=game_agent.stupid_score)
+
+        self.game = isolation.Board(self.player1,self.player2, 3, 3)
+    
+    def test_best_move_is_middle(self):
+        self.assertEqual(self.player1.get_move(self.game, time_left), (1,1))
 
         
 if __name__ == '__main__':
