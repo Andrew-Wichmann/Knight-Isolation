@@ -169,7 +169,9 @@ class MinimaxPlayer(IsolationPlayer):
         # in case the search fails due to timeout
         best_move = (-1, -1)
         try:
-            best_move = self.minimax(game, self.search_depth)
+            while True:
+                best_move = self.minimax(game, self.search_depth)
+                self.search_depth = self.search_depth + 1
         except SearchTimeout:
             pass
         # Return the best move from the last completed search iteration
@@ -222,14 +224,11 @@ class MinimaxPlayer(IsolationPlayer):
         best_move = (-1, -1)
         for move in game.get_legal_moves():         # test all available moves one by one
             prediction = game.forecast_move(move)   # apply the move to a copy of the game state
-            try:
-                predicted_value = self.min_value(prediction, depth-1)   # search the copied game state with the move applied 
-                if predicted_value > max_utility:
-                    # keep track of the best option
-                    max_utility = predicted_value
-                    best_move = move
-            except SearchTimeout:
-                return best_move
+            predicted_value = self.min_value(prediction, depth-1)   # search the copied game state with the move applied 
+            if predicted_value > max_utility:
+                # keep track of the best option
+                max_utility = predicted_value
+                best_move = move
         return best_move
 
     def min_value(self, game, depth):
@@ -341,9 +340,15 @@ class AlphaBetaPlayer(IsolationPlayer):
             (-1, -1) if there are no available legal moves.
         """
         self.time_left = time_left
-
-        # TODO: finish this function!
-        return AlphaBetaPlayer(game)
+        best_move = (-1, -1)
+        try:
+            while True:
+                best_move = self.alphabeta(game, depth=self.search_depth)
+                self.search_depth = self.search_depth + 1
+        except SearchTimeout:
+            pass
+        # Return the best move from the last completed search iteration
+        return best_move
 
     def alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf")):
         """Implement depth-limited minimax search with alpha-beta pruning as
@@ -393,22 +398,22 @@ class AlphaBetaPlayer(IsolationPlayer):
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
 
+        if depth <= 0:
+            return self.score(game, self)
+
         max_utility = -float('inf')
         best_move = (-1, -1)
         for move in game.get_legal_moves():         # test all available moves one by one
             prediction = game.forecast_move(move)   # apply the move to a copy of the game state
-            try:
-                predicted_value = self.min_value(prediction, alpha, beta)   # search the copied game state with the move applied 
-                if predicted_value > max_utility:
-                    # keep track of the best option
-                    max_utility = predicted_value
-                    best_move = move
-                alpha = max(max_utility, alpha)
-            except SearchTimeout:
-                return best_move
+            predicted_value = self.min_value(prediction, depth-1, alpha, beta)   # search the copied game state with the move applied 
+            if predicted_value > max_utility:
+                # keep track of the best option
+                max_utility = predicted_value
+                best_move = move
+            alpha = max(max_utility, alpha)
         return best_move
         
-    def min_value(self, game, alpha, beta):
+    def min_value(self, game, depth, alpha, beta):
         """ Return the minimal utility for the game going no further than depth(?)
         
         Parameters
@@ -431,14 +436,17 @@ class AlphaBetaPlayer(IsolationPlayer):
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout
 
-        if game_over(game):
-            return game.utility(game._player_1)
+        # if game_over(game):
+        #     return game.utility(self)
+
+        if depth <= 0:
+            return self.score(game, self)
 
         min_utility = float('inf')
         for move in game.get_legal_moves():
             try:
                 prediction = game.forecast_move(move)
-                min_utility = min(min_utility, self.max_value(prediction, alpha, beta))
+                min_utility = min(min_utility, self.max_value(prediction, depth-1, alpha, beta))
                 if min_utility <= alpha:
                     return min_utility
                 beta = min(min_utility, beta)
@@ -447,7 +455,7 @@ class AlphaBetaPlayer(IsolationPlayer):
 
         return min_utility
     
-    def max_value(self, game, alpha, beta):
+    def max_value(self, game, depth, alpha, beta):
         """ Return the maximum utility for the game going no further than depth(?)
         
         Parameters
@@ -470,14 +478,17 @@ class AlphaBetaPlayer(IsolationPlayer):
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout
 
-        if game_over(game):
-            return game.utility(game._player_1)
+        # if game_over(game):
+        #     return game.utility(self)
+
+        if depth <= 0:
+            return self.score(game, self)
 
         max_utility = -float('inf')
         for move in game.get_legal_moves():
             try:
                 prediction = game.forecast_move(move)
-                max_utility = max(max_utility, self.min_value(prediction, alpha, beta))
+                max_utility = max(max_utility, self.min_value(prediction, depth-1, alpha, beta))
                 if max_utility >= beta:
                     return max_utility
                 beta = max(max_utility, alpha)
@@ -514,7 +525,7 @@ class MinimaxPlayerTroll(MinimaxPlayerBastard):
 
 
 def game_over(game):
-    if not game.get_legal_moves(game._active_player()):
+    if not game.get_legal_moves(game._active_player):
         return True
     else:
         return False
