@@ -19,8 +19,8 @@ class IsolationTest(unittest.TestCase):
 
     def setUp(self):
         reload(game_agent)
-        self.player1 = game_agent.MinimaxPlayer(score_fn=game_agent.stupid_score)
-        self.player2 = game_agent.MinimaxPlayer(score_fn=game_agent.stupid_score)
+        self.player1 = game_agent.MinimaxPlayer(score_fn=game_agent.most_moves_for_player)
+        self.player2 = game_agent.MinimaxPlayer(score_fn=game_agent.most_moves_for_player)
 
         self.game = isolation.Board(self.player1, self.player2)
     
@@ -65,16 +65,12 @@ class IsolationTest(unittest.TestCase):
 
         move = self.player2.get_move(game=self.game, time_left=time_left)
         self.assertEqual(move, (3,2))
-    
-    def test_timer_stops_after_get_move(self):
-        self.player1.get_move(game=self.game, time_left=time_left)
-        self.assertAlmostEqual(time_left(), 150, 1)
 
 class BastardTest(unittest.TestCase):
     def setUp(self):
         reload(game_agent)
-        self.player1 = game_agent.MinimaxPlayerTroll(score_fn=game_agent.stupid_score)
-        self.player2 = game_agent.MinimaxPlayerTroll(score_fn=game_agent.stupid_score)
+        self.player1 = game_agent.MinimaxPlayerTroll(score_fn=game_agent.most_moves_for_player)
+        self.player2 = game_agent.MinimaxPlayerTroll(score_fn=game_agent.most_moves_for_player)
 
         self.game = isolation.Board(self.player1,self.player2, 3, 3)
     
