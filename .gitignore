@@ -98,3 +98,6 @@ ENV/
 
 # SQLite DB
 sqlite
+
+# Benchmarking file
+benchmarking
