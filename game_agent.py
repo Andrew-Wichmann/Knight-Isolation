@@ -12,7 +12,7 @@ class SearchTimeout(Exception):
 
 
 def most_moves_for_player(game, player):
-    return -float(len(game.get_legal_moves(player)))
+    return float(len(game.get_legal_moves(player)))
 
 def least_moves_for_other_player(game, player):
     if player == game._player_1:
@@ -36,6 +36,34 @@ def aggressive_diff_in_moves(game, player):
 
 def passive_diff_in_moves(game, player):
     difference = float(1.2*len(game.get_legal_moves(game._player_1)) - 0.8*len(game.get_legal_moves(game._player_2)))
+    if player == game._player_1:
+        return -difference
+    else:
+        return difference
+
+def slightly_aggressive_diff_in_moves(game, player):
+    difference = float(0.9*len(game.get_legal_moves(game._player_1)) - 1.1*len(game.get_legal_moves(game._player_2)))
+    if player == game._player_1:
+        return -difference
+    else:
+        return difference
+
+def slightly_passive_diff_in_moves(game, player):
+    difference = float(1.1*len(game.get_legal_moves(game._player_1)) - 0.9*len(game.get_legal_moves(game._player_2)))
+    if player == game._player_1:
+        return -difference
+    else:
+        return difference
+
+def very_passive_diff_in_moves(game, player):
+    difference = float(1.2*len(game.get_legal_moves(game._player_1)) - 0.8*len(game.get_legal_moves(game._player_2)))
+    if player == game._player_1:
+        return -difference
+    else:
+        return difference
+
+def very_aggressive_diff_in_moves(game, player):
+    difference = float(1.5*len(game.get_legal_moves(game._player_1)) - 0.5*len(game.get_legal_moves(game._player_2)))
     if player == game._player_1:
         return -difference
     else:
@@ -142,12 +170,11 @@ class IsolationPlayer:
         positive value large enough to allow the function to return before the
         timer expires.
     """
-    def __init__(self, search_depth=3, score_fn=custom_score, timeout=15.):
+    def __init__(self, search_depth=1, score_fn=custom_score, timeout=15.):
         self.search_depth = search_depth
         self.score = score_fn
         self.time_left = None
         self.TIMER_THRESHOLD = timeout
-        self.name = 'Andrew Wichmann'
 
 
 class MinimaxPlayer(IsolationPlayer):
@@ -155,6 +182,10 @@ class MinimaxPlayer(IsolationPlayer):
     search. You must finish and test this player to make sure it properly uses
     minimax to return a good move before the search time limit expires.
     """
+
+    def __init__(self, score_fn, search_depth=1, timeout=10.0):
+        super().__init__(score_fn=score_fn, search_depth=search_depth, timeout=timeout)
+        self.__name__ = 'Minimax'
 
     def get_move(self, game, time_left):
         """Search for the best move from the available legal moves and return a
@@ -186,18 +217,14 @@ class MinimaxPlayer(IsolationPlayer):
         """
         self.time_left = time_left
 
-        # Initialize the best move so that this function returns something
-        # in case the search fails due to timeout
+        best_move=None
         try:
-            depth = self.search_depth
-            best_move = (-1,-1) # at least return a move
+            depth = self.search_depth # Initialize the starting depth
             while True:
-                max_utility, best_move = self.max_value(game, depth)
-                if max_utility == float('inf'):
-                    return best_move
-                depth = depth + 1
+                best_move = self.minimax(game, depth) # Calculate the best move
+                depth += 1 # Search deeper
         except SearchTimeout:
-            pass
+            pass # when we're out of time, just return the move from the last interation of minimax
         return best_move
 
     def minimax(self, game, depth):
@@ -243,115 +270,50 @@ class MinimaxPlayer(IsolationPlayer):
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout
         
-        if game_over(game):
-            return None
-
-        max_utility = -float('inf')
-        best_move = None
-        for move in game.get_legal_moves():         # test all available moves one by one
-            prediction = game.forecast_move(move)   # apply the move to a copy of the game state
-            predicted_value = self.min_value(prediction, depth-1)   # search the copied game state with the move applied 
-            if predicted_value >= max_utility:
-                # keep track of the best option
-                max_utility = predicted_value
+        max_value = -float('inf')
+        best_move = (-1,-1)
+        for move in game.get_legal_moves(): # Go through all the possible moves for this player
+            prediction_board = game.forecast_move(move) # Generate a copy of the board with that move applied
+            predicted_value = self.min_value(prediction_board, depth-1) # Calculate the likely return from an opponent minimizing our objective function
+            # Check and keep track of the best move
+            if predicted_value >= max_value:
                 best_move = move
+                max_value = predicted_value
         return best_move
-
+        
     def min_value(self, game, depth):
-        """ Return the minimal utility for the game going no further than depth(?)
-        
-        Parameters
-        ----------
-        game : isolation.GameBoard
-            An instance of GameBoard representing the current state of the game
-
-        depth : int
-            Depth is an integer representing the maximum number of plies to
-            search in the game tree before aborting
-        
-        Returns
-        -------
-        min_utility : int
-            Utility represents the best option available at the current game state for the minimizing player
-
-        """
-
-        # Raise exception if we're out of time
-        if self.time_left() < self.TIMER_THRESHOLD:
+        if self.time_left() < self.TIMER_THRESHOLD: # Throw SearchTimeout if out of time
             raise SearchTimeout
 
+        if game_over(game):
+            return game.utility(self) # If the game pass is over, return whether we won or not
+
         if depth <= 0:
-            return self.score(game, self)
+            return self.score(game, self) # If the depth is met, don't search any further
+        
+        minimum_value = float('inf')
+        for move in game.get_legal_moves(): # Go through all the moves available to the minimizing player
+            predicted_board = game.forecast_move(move) # Apply each move to a copy of the gameboard
+            predicted_value = self.max_value(predicted_board, depth-1) # Calculate the likely return from a maximizing player
+            minimum_value = min(predicted_value, minimum_value) # Save the minimum so far
+        return minimum_value
 
-        min_utility = float('inf')
-        for move in game.get_legal_moves():
-            prediction = game.forecast_move(move)
-            min_utility = min(min_utility, self.max_value(prediction, depth-1))
-            return min_utility
-
-        return min_utility
-    
     def max_value(self, game, depth):
-        """ Return the maximum utility for the game going no further than depth(?)
-        
-        Parameters
-        ----------
-        game : isolation.GameBoard
-            An instance of GameBoard representing the current state of the game
-
-        depth : int
-            Depth is an integer representing the maximum number of plies to
-            search in the game tree before aborting
-        
-        Returns
-        -------
-        max_utility : int
-            Utility represents the best option available at the current game state for the maximizing player
-
-        """
-        
-        # Raise exception if we're out of time
-        if self.time_left() < self.TIMER_THRESHOLD:
+        if self.time_left() < self.TIMER_THRESHOLD: # Throw SearchTimeout if out of time
             raise SearchTimeout
+        
+        if game_over(game):
+            return game.utility(self) # If the game if over, return where we won or not
 
         if depth <= 0:
-            return self.score(game, self)
+            return self.score(game, self) # If the depth is met, don't search any further
 
-        max_utility = -float('inf')
-        for move in game.get_legal_moves():
-            prediction = game.forecast_move(move)
-            max_utility = max(max_utility, self.min_value(prediction, depth-1))
-            return max_utility
-            
-        return max_utility
-
-
-class MinimaxPlayerBastard(MinimaxPlayer):
-    """ This bastard player returns the worst move for itself.
-    In a 3x3 board, it's trivial to see the Bastard would pick the middle
-    square. Alt name: MinimaxPlayerTroll
-    """
-    def minimax(self, game, depth):
-        if self.time_left() < self.TIMER_THRESHOLD:
-            raise SearchTimeout
-
-        min_utility = float('inf')
-        worst_move = (-1, -1)
-        for move in game.get_legal_moves():         # test all available moves one by one
-            prediction = game.forecast_move(move)   # apply the move to a copy of the game state
-            try:
-                predicted_value = self.min_value(prediction, depth-1)   # search the game state
-                if predicted_value < min_utility:
-                    # keep track of the best option
-                    min_utility = predicted_value
-                    worst_move = move
-            except SearchTimeout:
-                return worst_move
-        return worst_move
-
-class MinimaxPlayerTroll(MinimaxPlayerBastard):
-    pass
-
+        maximum_value = -float('inf')
+        for move in game.get_legal_moves(): # Go through all the moves available to the maximizing player
+            predicted_board = game.forecast_move(move) # Apply each move to a copy of the gameboard
+            predicted_value = self.min_value(predicted_board, depth-1) # Calculate the likely return from a minimizing player
+            maximum_value = max(predicted_value, maximum_value) # Save the maimum found so far
+        return maximum_value
 
 def game_over(game):
     if len(game.get_legal_moves())==0:
@@ -364,6 +326,9 @@ class AlphaBetaPlayer(IsolationPlayer):
     search with alpha-beta pruning. You must finish and test this player to
     make sure it returns a good move before the search time limit expires.
     """
+    def __init__(self, score_fn, search_depth=1, timeout=10.0):
+        super().__init__(score_fn=score_fn, search_depth=search_depth, timeout=timeout)
+        self.__name__ = 'Alphabeta pruner'
 
     def get_move(self, game, time_left):
         """Search for the best move from the available legal moves and return a
@@ -396,60 +361,70 @@ class AlphaBetaPlayer(IsolationPlayer):
             (-1, -1) if there are no available legal moves.
         """
 
+        best_move = None
         try:
-            depth = self.search_depth
-            best_move = (-1,-1) # at least return a move
+            depth = self.search_depth # Start the search at search_depth
             while True:
-                max_utility, best_move = self.max_value(game, time_left, depth)
-                if max_utility == float('inf'):
-                    return best_move
-                depth = depth + 1
+                _, best_move = self.max_value(game, time_left, depth) # Get the max value from the current gameboard
+                depth = depth + 1 # Search deeper
         except SearchTimeout:
-            pass
+            pass # when we timeout, just return the move found on the last iteration
         return best_move
 
     def max_value(self, game, time_left, depth, alpha=-float('inf'), beta=float('inf')):
         if time_left() < self.TIMER_THRESHOLD:
-            raise SearchTimeout
+            raise SearchTimeout # raise timeout if out out time
 
         if game_over(game):
-            return game.utility(self), None
+            return game.utility(self), None # If the game is over, return whether we won on this branch or not
 
         if depth <= 0:
-            return self.score(game, self), None
+            return self.score(game, self), None  # If the depth is met, return the score of the current board
 
         best_move = (-1,-1)
         max_utility = -float('inf')
-        for move in game.get_legal_moves():
-            game_copy = game.forecast_move(move)
-            predicted_value, _ = self.min_value(game_copy, time_left, depth-1, alpha, beta)
+        for move in game.get_legal_moves(): # Iterate over all the possible moves for the maximizing player
+            game_copy = game.forecast_move(move) # Apply each move to a copy of the gameboard
+            predicted_value, _ = self.min_value(game_copy, time_left, depth-1, alpha, beta) # Calculate the likely value from a player minimizing our objective function after applying this move
+            
+            # Save the best move so far
             if predicted_value >= max_utility:
                 max_utility = predicted_value
                 best_move = move
-            if predicted_value >= beta:
+
+            # Prune this branch if the max_utility is more that the upper limit (ie: beta)
+            if max_utility >= beta:
                 return max_utility, best_move
+
+            # Set the lower bound for sibling and child branches ("You branches better be at least this good, or I'm not choosing you" - max_value)
             alpha = max(predicted_value, alpha)
         return max_utility, best_move
 
     def min_value(self, game, time_left, depth, alpha=-float('inf'), beta=float('inf')):
         if time_left() < self.TIMER_THRESHOLD:
-            raise SearchTimeout
+            raise SearchTimeout # raise a timeout if we're out of time
         
         if game_over(game):
-            return game.utility(self), None
+            return game.utility(self), None # If the game is over, return whether we won or not
 
         if depth <= 0:
-            return self.score(game, self), None
+            return self.score(game, self), None # If the depth is met, return the objective function applied to the game board
 
         best_move = (-1,-1)
         min_utility = float('inf')
-        for move in game.get_legal_moves():
-            game_copy = game.forecast_move(move)
-            predicted_value, _ = self.max_value(game_copy, time_left, depth-1, alpha, beta)
+        for move in game.get_legal_moves(): # Iterate through all the moves avaiable to the minimizing player
+            game_copy = game.forecast_move(move) # Apply each move to a copy of the game board
+            predicted_value, _ = self.max_value(game_copy, time_left, depth-1, alpha, beta) # Caluculate the likely value from a player maximizing our objecttive function after applying this move
+            
+            # Keep track of the least value found so far
             if predicted_value <= min_utility:
                 min_utility = predicted_value
                 best_move = move
-            if predicted_value <= alpha:
+
+            # Prune this branch if the min_value is lower than our lower bound
+            if min_utility <= alpha:
                 return min_utility, best_move
+
+            # Set the upper bound for sibling and child branches ("You branches can't be better than this because I'll never pick you" - min_value)
             beta = min(predicted_value, beta)
         return min_utility, best_move
