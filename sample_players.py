@@ -143,6 +143,7 @@ class RandomPlayer(Player):
 
     def __init__(self, name='Random Player'):
         super().__init__(name)
+        self.__name__ = 'random'
 
     def get_move(self, game, time_left):
         """Randomly select a move from the available legal moves.
@@ -178,6 +179,7 @@ class GreedyPlayer(Player):
     def __init__(self, name='Greedy Player', score_fn=open_move_score):
         super().__init__(name)
         self.score = score_fn
+        self.__name__ = 'random'
 
     def get_move(self, game, time_left):
         """Select the move from the available legal moves with the highest
@@ -212,6 +214,7 @@ class HumanPlayer(Player):
     """Player that chooses a move according to user's input."""
     def __init__(self, name='Human Player'):
         super().__init__(name)
+        self.__name__ = 'human'
         
     def get_move(self, game, time_left):
         """
