@@ -9,101 +9,53 @@ if len(sys.argv) >= 2:
 else:
     amount_of_games = 100
 
-def run_benchmark(num_of_games=100, score=most_moves_for_player, algorithm='mm'):
-    print('#### {}_{} benchmark ####\n\n'.format(score.__name__, algorithm))
-
-    if algorithm == 'mm':
-        player1 = MinimaxPlayer(score_fn=score)
-    elif algorithm == 'ab':
-        player1 = AlphaBetaPlayer(score_fn=score)
-    player2 = sample_players.GreedyPlayer()
-    record = [0,0]
-    reasons_lost = {"timeout": 0, "forfeit": 0, "illegal move": 0}
-    for _ in range(num_of_games):
-        game = Board(player1, player2)
-        winner, _, reason = game.play()
-        if winner == player1:
-            record[0] = record[0]+1
-        else:
-            record[1] = record[1]+1
-            if reason == "timeout":
-                reasons_lost["timeout"] += 1
-            elif reason == "forfeit":
-                reasons_lost["forfeit"] += 1
-            elif reason == "illegal move":
-                reasons_lost["illegal move"] += 1
-            else:
-                print('ya don\' fucked up')
-                raise Exception
-    print("Wins: {} \nLosses: {}\nW/L Ratio: {}\n\n".format(record[0],record[1],record[0]/amount_of_games))
-    print("Lost because of timeout {} \nLost because of forfeit {} \nLost because of illegal move: {}".format(
-            reasons_lost["timeout"],
-            reasons_lost["forfeit"],
-            reasons_lost["illegal move"])
-        )
-
-    # Save results in database
-    match_history = select_match("{}_{}".format(score.__name__, algorithm), "greedy")
-    if len(match_history):
-        match_history = match_history[0][2:4]
-    else:
-        insert_into_table(values=("{}_{}".format(score.__name__, algorithm), "greedy", 0, 0))
-        match_history = (0,0)
-    new_match_history = (match_history[0]+record[0], match_history[1]+record[1])
-    update_table(new_match_history[0], new_match_history[1], "{}_{}".format(score.__name__, algorithm), "greedy")
-
-    print("The historical match history between {}_{} and greedy: {}\n\n\n".format(score.__name__, algorithm, new_match_history))
-
-run_benchmark(score=most_moves_for_player, algorithm='mm', num_of_games=amount_of_games)
-run_benchmark(score=least_moves_for_other_player, algorithm='mm', num_of_games=amount_of_games)
-run_benchmark(score=diff_in_moves, algorithm='mm', num_of_games=amount_of_games)
-run_benchmark(score=aggressive_diff_in_moves, algorithm='mm', num_of_games=amount_of_games)
-run_benchmark(score=passive_diff_in_moves, algorithm='mm', num_of_games=amount_of_games)
-run_benchmark(score=slightly_passive_diff_in_moves, algorithm='mm', num_of_games=amount_of_games)
-run_benchmark(score=very_passive_diff_in_moves, algorithm='mm', num_of_games=amount_of_games)
-run_benchmark(score=slightly_aggressive_diff_in_moves, algorithm='mm', num_of_games=amount_of_games)
-run_benchmark(score=very_aggressive_diff_in_moves, algorithm='mm', num_of_games=amount_of_games)
-
-run_benchmark(score=most_moves_for_player, algorithm='ab', num_of_games=amount_of_games)
-run_benchmark(score=least_moves_for_other_player, algorithm='ab', num_of_games=amount_of_games)
-run_benchmark(score=diff_in_moves, algorithm='ab', num_of_games=amount_of_games)
-run_benchmark(score=aggressive_diff_in_moves, algorithm='ab', num_of_games=amount_of_games)
-run_benchmark(score=passive_diff_in_moves, algorithm='ab', num_of_games=amount_of_games)
-run_benchmark(score=slightly_passive_diff_in_moves, algorithm='ab', num_of_games=amount_of_games)
-run_benchmark(score=very_passive_diff_in_moves, algorithm='ab', num_of_games=amount_of_games)
-run_benchmark(score=slightly_aggressive_diff_in_moves, algorithm='ab', num_of_games=amount_of_games)
-run_benchmark(score=very_aggressive_diff_in_moves, algorithm='ab', num_of_games=amount_of_games)
-
-def run_benchmark2(player1, player2, num_of_games):
+def run_benchmark(player1, player2, num_of_games):
     print('#### {} vs {} benchmark ####\n\n'.format(player1.__name__, player2.__name__))
 
     record = [0,0]
-    reasons_lost = {"timeout": 0, "forfeit": 0, "illegal move": 0}
+    reasons_p1_lost = {"timeout": 0, "forfeit": 0, "illegal move": 0}
+    reasons_p2_lost = {"timeout": 0, "forfeit": 0, "illegal move": 0}
     for _ in range(num_of_games):
         game = Board(player1, player2)
         winner, _, reason = game.play()
         if winner == player1:
             record[0] = record[0]+1
+            if reason == "timeout":
+                reasons_p2_lost["timeout"] += 1
+            elif reason == "forfeit":
+                reasons_p2_lost["forfeit"] += 1
+            elif reason == "illegal move":
+                reasons_p2_lost["illegal move"] += 1
         else:
             record[1] = record[1]+1
             if reason == "timeout":
-                reasons_lost["timeout"] += 1
+                reasons_p1_lost["timeout"] += 1
             elif reason == "forfeit":
-                reasons_lost["forfeit"] += 1
+                reasons_p1_lost["forfeit"] += 1
             elif reason == "illegal move":
-                reasons_lost["illegal move"] += 1
-            else:
-                print('ya don\' fucked up')
-                raise Exception
-    print("Wins: {} \nLosses: {}\nW/L Ratio: {}\n\n".format(record[0],record[1],record[0]/amount_of_games))
-    print("Lost because of timeout {} \nLost because of forfeit {} \nLost because of illegal move: {}".format(
-            reasons_lost["timeout"],
-            reasons_lost["forfeit"],
-            reasons_lost["illegal move"])
+                reasons_p1_lost["illegal move"] += 1
+
+    print("{} wins: {} \n{} wins: {}\n\n".format(
+        player1.__name__,
+        record[0],
+        player2.__name__,
+        record[1])
+    )
+    print("{}\nLost because of timeout {} \nLost because of forfeit {} \nLost because of illegal move: {}\n".format(
+            player1.__name__,
+            reasons_p1_lost["timeout"],
+            reasons_p1_lost["forfeit"],
+            reasons_p1_lost["illegal move"])
+        )
+    print("{}\nLost because of timeout {} \nLost because of forfeit {} \nLost because of illegal move: {}\n".format(
+            player2.__name__,
+            reasons_p2_lost["timeout"],
+            reasons_p2_lost["forfeit"],
+            reasons_p2_lost["illegal move"])
         )
 
     # Save results in database
-    match_history = select_match("{}_{}".format(player1.__name__, player2.__name__), "greedy")
+    match_history = select_match(player1.__name__, player2.__name__)
     if len(match_history):
         match_history = match_history[0][2:4]
     else:
@@ -112,8 +64,42 @@ def run_benchmark2(player1, player2, num_of_games):
     new_match_history = (match_history[0]+record[0], match_history[1]+record[1])
     update_table(new_match_history[0], new_match_history[1], player1.__name__, player2.__name__)
 
-    print("The historical match history between {}_{} and greedy: {}\n\n\n".format(player1.__name__, player2.__name__, new_match_history))
+    print("The historical match history between {} and {}: {}\n\n\n".format(player1.__name__, player2.__name__, new_match_history))
 
-# mm = MinimaxPlayer(score_fn = diff_in_moves)
-# ab = AlphaBetaPlayer(score_fn = diff_in_moves)
-# run_benchmark2(mm, ab, amount_of_games)
+mm1 = MinimaxPlayer(score_fn = most_moves_for_player)
+ab1 = AlphaBetaPlayer(score_fn = most_moves_for_player)
+
+mm2 = MinimaxPlayer(score_fn = least_moves_for_other_player)
+ab2 = AlphaBetaPlayer(score_fn = least_moves_for_other_player)
+
+mm3 = MinimaxPlayer(score_fn = diff_in_moves)
+ab3 = AlphaBetaPlayer(score_fn = diff_in_moves)
+
+mm4 = MinimaxPlayer(score_fn = aggressive_diff_in_moves)
+ab4 = AlphaBetaPlayer(score_fn = aggressive_diff_in_moves)
+
+mm5 = MinimaxPlayer(score_fn = slightly_aggressive_diff_in_moves)
+ab5 = AlphaBetaPlayer(score_fn = slightly_aggressive_diff_in_moves)
+
+mm6 = MinimaxPlayer(score_fn = very_aggressive_diff_in_moves)
+ab6 = AlphaBetaPlayer(score_fn = very_aggressive_diff_in_moves)
+
+mm7 = MinimaxPlayer(score_fn = passive_diff_in_moves)
+ab7 = AlphaBetaPlayer(score_fn = passive_diff_in_moves)
+
+mm8 = MinimaxPlayer(score_fn = slightly_passive_diff_in_moves)
+ab8 = AlphaBetaPlayer(score_fn = slightly_passive_diff_in_moves)
+
+mm9 = MinimaxPlayer(score_fn = very_passive_diff_in_moves)
+ab9 = AlphaBetaPlayer(score_fn = very_passive_diff_in_moves)
+
+
+run_benchmark(mm1, ab1, amount_of_games)
+run_benchmark(mm2, ab2, amount_of_games)
+run_benchmark(mm3, ab3, amount_of_games)
+run_benchmark(mm4, ab4, amount_of_games)
+run_benchmark(mm5, ab5, amount_of_games)
+run_benchmark(mm6, ab6, amount_of_games)
+run_benchmark(mm7, ab7, amount_of_games)
+run_benchmark(mm8, ab8, amount_of_games)
+run_benchmark(mm9, ab9, amount_of_games)

@@ -185,7 +185,7 @@ class MinimaxPlayer(IsolationPlayer):
 
     def __init__(self, score_fn, search_depth=1, timeout=10.0):
         super().__init__(score_fn=score_fn, search_depth=search_depth, timeout=timeout)
-        self.__name__ = 'Minimax'
+        self.__name__ = 'Minimax with {}'.format(score_fn.__name__)
 
     def get_move(self, game, time_left):
         """Search for the best move from the available legal moves and return a
@@ -328,7 +328,7 @@ class AlphaBetaPlayer(IsolationPlayer):
     """
     def __init__(self, score_fn, search_depth=1, timeout=10.0):
         super().__init__(score_fn=score_fn, search_depth=search_depth, timeout=timeout)
-        self.__name__ = 'Alphabeta pruner'
+        self.__name__ = 'Alphabeta pruner with {}'.format(score_fn.__name__)
 
     def get_move(self, game, time_left):
         """Search for the best move from the available legal moves and return a
