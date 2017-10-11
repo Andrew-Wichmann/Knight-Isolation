@@ -9,8 +9,10 @@ import time
 class SearchTimeout(Exception):
     """Subclass base exception for code clarity. """
     pass
-
-
+    
+########################################
+#### Candidate evaluation functions ####
+########################################
 def most_moves_for_player(game, player):
     return float(len(game.get_legal_moves(player)))
 
@@ -23,51 +25,51 @@ def least_moves_for_other_player(game, player):
 def diff_in_moves(game, player):
     difference = float(len(game.get_legal_moves(game._player_1)) - len(game.get_legal_moves(game._player_2)))
     if player == game._player_1:
-        return -difference
-    else:
         return difference
+    else:
+        return -difference
 
 def aggressive_diff_in_moves(game, player):
     difference = float(0.8*len(game.get_legal_moves(game._player_1)) - 1.2*len(game.get_legal_moves(game._player_2)))
     if player == game._player_1:
-        return -difference
-    else:
         return difference
+    else:
+        return -difference
 
 def passive_diff_in_moves(game, player):
     difference = float(1.2*len(game.get_legal_moves(game._player_1)) - 0.8*len(game.get_legal_moves(game._player_2)))
     if player == game._player_1:
-        return -difference
-    else:
         return difference
+    else:
+        return -difference
 
 def slightly_aggressive_diff_in_moves(game, player):
     difference = float(0.9*len(game.get_legal_moves(game._player_1)) - 1.1*len(game.get_legal_moves(game._player_2)))
     if player == game._player_1:
-        return -difference
-    else:
         return difference
+    else:
+        return -difference
 
 def slightly_passive_diff_in_moves(game, player):
     difference = float(1.1*len(game.get_legal_moves(game._player_1)) - 0.9*len(game.get_legal_moves(game._player_2)))
     if player == game._player_1:
-        return -difference
-    else:
         return difference
+    else:
+        return -difference
 
 def very_passive_diff_in_moves(game, player):
     difference = float(1.2*len(game.get_legal_moves(game._player_1)) - 0.8*len(game.get_legal_moves(game._player_2)))
     if player == game._player_1:
-        return -difference
-    else:
         return difference
+    else:
+        return -difference
 
 def very_aggressive_diff_in_moves(game, player):
     difference = float(1.5*len(game.get_legal_moves(game._player_1)) - 0.5*len(game.get_legal_moves(game._player_2)))
     if player == game._player_1:
-        return -difference
-    else:
         return difference
+    else:
+        return -difference
 
 def custom_score(game, player):
     """Calculate the heuristic value of a game state from the point of view
