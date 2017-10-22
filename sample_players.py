@@ -179,7 +179,7 @@ class GreedyPlayer(Player):
     def __init__(self, name='Greedy Player', score_fn=open_move_score):
         super().__init__(name)
         self.score = score_fn
-        self.__name__ = 'random'
+        self.__name__ = 'greedy'
 
     def get_move(self, game, time_left):
         """Select the move from the available legal moves with the highest
